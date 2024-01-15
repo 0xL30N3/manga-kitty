@@ -1,7 +1,10 @@
 #!/bin/bash
 set -e
 dflag="false"
-source bar.sh
+bar_size=40
+bar_char_done="#"
+bar_char_todo="-"
+bar_percentage_scale=2
 print_usage() {
   printf "Script for reading and downloading manga with kitty terminal.\nOptions:\n  -d\n    Download chapter in current directory\n  -h\n    Show this message for help\n"
 }
@@ -13,13 +16,12 @@ while getopts 'dh' flag; do
        exit 1 ;;
   esac
 done
-echo -ne "\033[0;35mSearch: \033[0;32m" && read -r var; #echo -e "\033[0m"  #get search input
+echo -ne "\033[0;35mSearch: \033[0;32m" && read -r var #get search input
 a=$(curl -s -G "https://api.mangadex.org/manga" --data-urlencode "title=$var" --data-urlencode "limit=20") #GET request
 title=$( jq ".data[].attributes.title.en" <<< "$a"|sed "s/\"/\n/g" | sed -r '/^\s*$/d') #get cleaned up titles from data
 manga=$(fzf --layout=reverse --border <<< $title); #create selector
 
 id=$(jq -r --arg a "$manga" '.data[] | select(.attributes.title.en == $a) | .id' <<< $a) #get ID from selected title
-#echo $id
 clist=$(curl -s "https://api.mangadex.org/manga/$id/feed?translatedLanguage[]=en&order[chapter]=asc" --globoff) #GET chapter list
 list=$(jq -r '.data[].attributes.chapter' <<< $clist) #clean up
 chapter=$(fzf --layout=reverse --border <<< $list) #create selector
@@ -30,8 +32,6 @@ if [ $cn -gt 1 ]; then
 fi
 url=$(curl -s "https://api.mangadex.org/at-home/server/$cid") #get chapter url
 max=$(jq '.chapter.data[]' <<< $url | wc -l) #get chapter length
-#l=0
-#cache=$(mktemp -d)
 if [ "$dflag" == "true" ]; then
 	d="$manga/Chapter$chapter"
 	echo -e "\033[0;35mDownload Dir: \033[0;34m$d\033[0m"
@@ -41,15 +41,27 @@ for l in $(seq $max);
 do
 	o=$(($l-1))
 	img=$(echo $url | jq -r '(.baseUrl + "/data/" + .chapter.hash + "/" + .chapter.data['"$o"'])') #get chapter pages
-	#wget "$img" -o "$cache"/"$l"
 	if [ "$dflag" == "true" ]; then
 		wget -q "$img" -O "$d/$l"
-		#echo -ne "$l / $max\r"
-		show_progress $l $max
+		# calculate the progress in percentage 
+   		percent=$(bc <<< "scale=$bar_percentage_scale; 100 * $l / $max" )
+    		# The number of done and todo characters
+    		done=$(bc <<< "scale=0; $bar_size * $percent / 100" )
+    		todo=$(bc <<< "scale=0; $bar_size - $done" )
+
+    		# build the done and todo sub-bars
+    		done_sub_bar=$(printf "%${done}s" | tr " " "${bar_char_done}")
+    		todo_sub_bar=$(printf "%${todo}s" | tr " " "${bar_char_todo}")
+
+    		# output the bar
+    		echo -ne "\033[0;35m\rProgress : \033[0;32m[${done_sub_bar}${todo_sub_bar}] ${percent}% ($l/$max)"
+
+    		if [ $l -eq $max ]; then
+        		echo -e "\033[0;34m\nDONE\033[0m"
+    		fi
 	else
 		kitty +kitten icat "$img" #output
 		read ans #wait for input
 	fi
-	#echo -ne "$l / $max\r"
 	((l++))
 done
