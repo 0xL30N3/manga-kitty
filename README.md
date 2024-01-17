@@ -1,6 +1,8 @@
 # manga-kitty
 CLI Manga reader for Kitty terminal inspired by pystardust/ani-cli
-[demo.webm](https://github.com/0xL30N3/manga-kitty/assets/76763585/0b7c50f2-7da5-4914-94f0-11fd2ce07696)
+
+[demo.webm](https://github-production-user-asset-6210df.s3.amazonaws.com/76763585/297540239-42d530b9-d474-4a09-84be-8cd38a7d30a9.webm)
+
 
 ## Installation
 ### Dependencies
