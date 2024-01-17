@@ -18,29 +18,29 @@ while getopts 'dh' flag; do
 done
 echo -ne "\033[0;35mSearch: \033[0;32m" && read -r var #get search input
 a=$(curl -s -G "https://api.mangadex.org/manga" --data-urlencode "title=$var" --data-urlencode "limit=20") #GET request
-title=$( jq ".data[].attributes.title.en" <<< "$a"|sed "s/\"/\n/g" | sed -r '/^\s*$/d') #get cleaned up titles from data
-manga=$(fzf --layout=reverse --border <<< $title); #create selector
+title=$( jq -r ".data[].attributes.title.en" <<< "$a") #get cleaned up titles from data
+manga=$(fzf --layout=reverse --border <<< "$title"); #create selector
 
-id=$(jq -r --arg a "$manga" '.data[] | select(.attributes.title.en == $a) | .id' <<< $a) #get ID from selected title
+id=$(jq -r --arg a "$manga" '.data[] | select(.attributes.title.en == $a) | .id' <<< "$a") #get ID from selected title
 clist=$(curl -s "https://api.mangadex.org/manga/$id/feed?translatedLanguage[]=en&order[chapter]=asc" --globoff) #GET chapter list
-list=$(jq -r '.data[].attributes.chapter' <<< $clist) #clean up
-chapter=$(fzf --layout=reverse --border <<< $list) #create selector
-cid=$(jq -r --arg a "$chapter" '.data[] | select(.attributes.chapter == $a) | .id' <<< $clist) #get chapter id
+list=$(jq -r '.data[].attributes.chapter' <<< "$clist") #clean up
+chapter=$(fzf --layout=reverse --border <<< "$list") #create selector
+cid=$(jq -r --arg a "$chapter" '.data[] | select(.attributes.chapter == $a) | .id' <<< "$clist") #get chapter id
 cn=$(echo "$cid" | wc -l) #check duplicate chapter
 if [ $cn -gt 1 ]; then
 	cid=$(echo "$cid" | sed -n '1p') #remove duplicates
 fi
 url=$(curl -s "https://api.mangadex.org/at-home/server/$cid") #get chapter url
-max=$(jq '.chapter.data[]' <<< $url | wc -l) #get chapter length
+max=$(jq '.chapter.data[]' <<< "$url" | wc -l) #get chapter length
 if [ "$dflag" == "true" ]; then
 	d="$manga/Chapter$chapter"
 	echo -e "\033[0;35mDownload Dir: \033[0;34m$d\033[0m"
 	mkdir -p "$d"
 fi
-for l in $(seq $max);
+for l in $(seq "$max");
 do
 	o=$(($l-1))
-	img=$(echo $url | jq -r '(.baseUrl + "/data/" + .chapter.hash + "/" + .chapter.data['"$o"'])') #get chapter pages
+	img=$(echo "$url" | jq -r '(.baseUrl + "/data/" + .chapter.hash + "/" + .chapter.data['"$o"'])') #get chapter pages
 	if [ "$dflag" == "true" ]; then
 		wget -q "$img" -O "$d/$l"
 		# calculate the progress in percentage 
