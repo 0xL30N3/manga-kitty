@@ -6,7 +6,7 @@ bar_char_done="#"
 bar_char_todo="-"
 bar_percentage_scale=2
 print_usage() {
-  printf "Script for reading and downloading manga with kitty terminal.\nOptions:\n  -d\n    Download chapter in current directory\n  -h\n    Show this message for help\n"
+  printf "Script for reading and downloading manga with kitty terminal.\nDefault key for loading new page is ENTER.\nOptions:\n  -d\n    Download chapter in current directory\n  -h\n    Show this message for help\n"
 }
 
 while getopts 'dh' flag; do
