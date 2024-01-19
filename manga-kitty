@@ -27,7 +27,7 @@ list=$(jq -r '.data[].attributes.chapter' <<< "$clist") #clean up
 chapter=$(fzf --layout=reverse --border <<< "$list") #create selector
 cid=$(jq -r --arg a "$chapter" '.data[] | select(.attributes.chapter == $a) | .id' <<< "$clist") #get chapter id
 cn=$(echo "$cid" | wc -l) #check duplicate chapter
-if [ $cn -gt 1 ]; then
+if [ "$cn" -gt 1 ]; then
 	cid=$(echo "$cid" | sed -n '1p') #remove duplicates
 fi
 url=$(curl -s "https://api.mangadex.org/at-home/server/$cid") #get chapter url
